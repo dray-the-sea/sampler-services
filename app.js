@@ -1,8 +1,11 @@
-const express = require('express')
-const app = express()
-const port = 3000
+const express = require('express');
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
+const moment = require('moment')
 
-const mysql = require('mysql')
+const app = express();
+const port = 3000;
+
 
 const connection = mysql.createConnection({
   host: 'mysql',
@@ -11,60 +14,113 @@ const connection = mysql.createConnection({
   database: 'sampler-db'
 })
 
-//var app_db = require('./src/app-db');
-
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
 
 
-app.post('/user/:userId/', (req, res) => {
-
-})
+app.use(bodyParser.json());
+app.post('/user/', function(req, res) {
+  let sql = `INSERT INTO users(email, username, passcode, created) VALUES (?)`;
+  let values = [
+    req.body.email,
+    req.body.username,
+    req.body.passcode,  
+    moment().format('YYYY-MM-DD, hh:mm:ss')
+  ];
+    console.log("query: ", sql)
+  
+  connection.query(sql, [values], function(err) {
+    if (err) {
+      console.log(err)
+      res.json({
+        status: 500,
+        message: "Something went terribly wrong with your query; please check logs."
+      })
+    } 
+    res.json({
+      status: 200,
+      message: "New user added successfully"
+    })
+  })
+});
 
 app.get('/user/:username/', (req, res) => {
   username = req.params.username
   if (username)
   {
-    return connection.query(`SELECT * FROM users WHERE username="${username}";`, function(error, results){
-      console.log("query response is ", results);
+    let sql = `SELECT * FROM users WHERE username=?;`
+    console.log("query: ", sql)
+
+    return connection.query(sql, [username], function(err, results){
+      if (err) {
+        console.log(err)
+        res.json({
+          status: 500,
+          message: "Something went terribly wrong with your query; please check logs."
+        })
+      } 
+      console.log("response: ", results);
       res.json(results);
     })
   }
-  res.send(`no username in request`)
+  res.json({
+    status: 400,
+    message: "Bad request; missing user ID."
+  })
 })
 
-app.get('/observations/:userId/', (req, res) => {
-  userId = req.params.userId
-  if (userId)
-  {
-    return connection.query(`SELECT * FROM observations WHERE user="${userId}";`, function(error, results){
-      console.log("query response is ", results);
-      res.json(results);
-    })
-  }
-  res.send(`no username in request`)
-})
-
-app.post('/user/:username/observation', function(req, res) {
-  let sql = `INSERT INTO observtions(user, feeling, company, activity, created) VALUES (?)`;
+app.use(bodyParser.json());
+app.post('/user/:userId/observation', function(req, res) {
+  let sql = `INSERT INTO observations(user, feeling, company, activity, created) VALUES (?)`;
+  console.log("query: ", sql)
+  
   let values = [
     req.params.userId,
     req.body.feeling,
     req.body.company, 
     req.body.activity,
-    Date.now
+    moment().format('YYYY-MM-DD, hh:mm:ss')
   ];
   
-  connection.query(sql, [values], function(err, data, fields) {
-    if (err) throw err;
+  connection.query(sql, [values], function(err) {
+    if (err) {
+      console.log(err)
+      res.json({
+        status: 500,
+        message: "Something went terribly wrong with your query; please check logs."
+      })
+      
+    } 
     res.json({
       status: 200,
       message: "New observation added successfully"
     })
   })
 });
+
+
+app.get('/user/:userId/observations', (req, res) => {
+  userId = req.params.userId
+  if (userId)
+  {
+    let sql = `SELECT * FROM observations WHERE user="${userId}";`
+    console.log("query: ", sql)
+
+    return connection.query(sql, function(err, results){  
+      if (err) {
+        console.log(err)
+        res.json({
+          status: 500,
+          message: "Something went terribly wrong with your query; please check logs."
+        })
+      } 
+      console.log("response: ", results);
+      res.json(results);
+    })
+  }
+  res.json({
+    status: 400,
+    message: "Bad request; missing user ID."
+  })
+})
