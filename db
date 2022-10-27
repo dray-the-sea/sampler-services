@@ -1,0 +1,32 @@
+docker exec -it sampler-services-mysql-1 mysql -p
+mysql -h sampler-db -u root -ppassword secret
+
+use sampler-db;
+show tables;
+
+create table users(
+   id INT NOT NULL AUTO_INCREMENT,
+   email VARCHAR(225) NOT NULL,
+   username VARCHAR(225) NOT NULL,
+   passcode varchar(100) NOT NULL, 
+   created DATE NOT NULL,
+   PRIMARY KEY ( id )
+);
+
+insert into users (email, username, passcode, created) values ("daorlova@outlook.com", "dray", "1234", "2022-09-30");
+insert into users (email, username, passcode, created) values ("daorlova@gmail.com", "dray2", "2468", "2022-09-23");
+insert into users (email, username, passcode, created) values ("thecat@hotmail.com", "thecat", "2222", "2022-08-05");
+
+create table observations(
+   id INT NOT NULL AUTO_INCREMENT,
+   user INT NOT NULL,
+   feeling VARCHAR(225) NOT NULL,
+   company VARCHAR(225) NOT NULL,
+   activity varchar(225) NOT NULL, 
+   created DATE NOT NULL,
+   PRIMARY KEY ( id )
+);
+
+insert into observations (user, feeling, company, activity, created) values (1, "hopeful", "the cat", "applying for jobs", "2022-10-25");
+insert into observations (user, feeling, company, activity, created) values (1, "tired", "", "working on this DB", "2022-10-25");
+insert into observations (user, feeling, company, activity, created) values (1, "sleepy", "bart", "changing sheets", "2022-10-25");

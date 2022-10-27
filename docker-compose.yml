@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  app:
+    container_name: app
+    image: app
+    command: sh -c "yarn install && yarn run dev"
+    #restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    ports:
+      - "${PORT}:${PORT}" 
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: sampler-db
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - sampler-mysql-data:/var/lib/mysql
+    environment: 
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: sampler-db
+
+volumes:
+  sampler-mysql-data:
