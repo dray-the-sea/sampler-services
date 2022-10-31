@@ -2,24 +2,33 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
 const moment = require('moment')
+var methodOverride = require('method-override');
 
 const app = express();
 const port = 3000;
 
-
-const connection = mysql.createConnection({
+const credentials = {
   host: 'mysql',
   user: 'root',
   password: 'secret',
   database: 'sampler-db'
-})
+}
+const connection = mysql.createConnection(credentials)
+
+
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+  console.log(`Sampler Services listening on port ${port}`)
 })
 
+/* User Section */
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ extended: true }));
+app.use(methodOverride());
+app.use(function(err, req, res, next) { res.status(400).send({
+  status: 400,
+  message: "Something might be wrong with the request."
+});});
 app.post('/user/', function(req, res) {
   let sql = `INSERT INTO users(email, username, passcode, created) VALUES (?)`;
   let values = [
@@ -28,9 +37,9 @@ app.post('/user/', function(req, res) {
     req.body.passcode,  
     moment().format('YYYY-MM-DD, hh:mm:ss')
   ];
-    console.log("query: ", sql)
   
-  connection.query(sql, [values], function(err) {
+  connection.query(sql, [values], function(err, results) {
+    console.log("query: ", sql)
     if (err) {
       console.log(err)
       res.json({
@@ -38,21 +47,28 @@ app.post('/user/', function(req, res) {
         message: "Something went terribly wrong with your query; please check logs."
       })
     } 
+    console.log("results: ", results)
     res.json({
       status: 200,
-      message: "New user added successfully"
+      message: "New user added successfully", 
+      id: results.insertId
     })
   })
 });
 
+app.use(methodOverride());
+app.use(function(err, req, res, next) { res.status(400).send({
+  status: 400,
+  message: "Something might be wrong with the request."
+});});
 app.get('/user/:username/', (req, res) => {
   username = req.params.username
   if (username)
   {
     let sql = `SELECT * FROM users WHERE username=?;`
-    console.log("query: ", sql)
 
     return connection.query(sql, [username], function(err, results){
+      console.log("query: ", sql, " ", username)
       if (err) {
         console.log(err)
         res.json({
@@ -70,9 +86,53 @@ app.get('/user/:username/', (req, res) => {
   })
 })
 
-app.use(bodyParser.json());
+app.use(methodOverride());
+app.use(function(err, req, res, next) { res.status(400).send({
+  status: 400,
+  message: "Something might be wrong with the request."
+});});
+app.delete('/user/:userId/', (req, res) => {
+  userId = req.params.userId
+  console.log("user id is ", userId)
+  if (userId)
+  {
+    let sql = `DELETE FROM users WHERE userid = ?;`
+
+    connection.query(sql, [userId], function(err, results) {
+      console.log("query: ", sql, " ", userId)
+      if (err) {
+        console.log(err)
+        res.json({
+          status: 500,
+          message: "Something went terribly wrong with your query; please check logs."
+        })
+      }
+      console.log("response: ", results);
+      res.json({
+        status: 200,
+        message: "User deleted successfully"
+      })
+    })
+    
+  } else {
+
+    res.json({
+      status: 400,
+      message: "Bad request; missing user ID."
+    })
+  }
+})
+
+/* Observation Section */
+
+app.use(bodyParser.json({ extended: true }));
+app.use(methodOverride());
+app.use(function(err, req, res, next) { res.status(400).send({
+  status: 400,
+  message: "Something might be wrong with the request."
+});});
 app.post('/user/:userId/observation', function(req, res) {
-  let sql = `INSERT INTO observations(user, feeling, company, activity, created) VALUES (?)`;
+  let sql = `INSERT INTO observations(userid, feeling, company, activity, created) VALUES (?)`;
   console.log("query: ", sql)
   
   let values = [
@@ -100,11 +160,16 @@ app.post('/user/:userId/observation', function(req, res) {
 });
 
 
+app.use(methodOverride());
+app.use(function(err, req, res, next) { res.status(400).send({
+  status: 400,
+  message: "Something might be wrong with the request."
+});});
 app.get('/user/:userId/observations', (req, res) => {
   userId = req.params.userId
   if (userId)
   {
-    let sql = `SELECT * FROM observations WHERE user="${userId}";`
+    let sql = `SELECT * FROM observations WHERE userid="${userId}";`
     console.log("query: ", sql)
 
     return connection.query(sql, function(err, results){  
